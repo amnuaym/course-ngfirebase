@@ -18,7 +18,10 @@ export default function Config ($stateProvider, $urlRouterProvider, $locationPro
   $stateProvider
     .state('auth', {
       abstract: true,
-      template: require('./views/auth.html')
+      template: require('./views/auth.html'),
+      resolve: {
+        redirectToHomeIfAuth
+      }
     })
     .state('auth.signin', {
       url: '/',
@@ -31,7 +34,12 @@ export default function Config ($stateProvider, $urlRouterProvider, $locationPro
       template: require('./views/register.html')
     })
     .state('layout', {
-      template: require('./views/layout.html')
+      template: require('./views/layout.html'),
+      controller: 'LayoutController',
+      controllerAs: 'vm',
+      resolve: {
+        redirectToAuthIfNotAuth
+      }
     })
     .state('home', {
       url: '/home',
@@ -43,13 +51,45 @@ export default function Config ($stateProvider, $urlRouterProvider, $locationPro
     .state('profile', {
       url: '/profile',
       parent: 'layout',
-      template: require('./views/profile.html')
+      template: '<profile></profile>'
     })
     .state('edit-profile', {
       url: '/profile/edit',
       parent: 'layout',
-      template: require('./views/edit-profile.html'),
-      controller: 'EditProfileController',
-      controllerAs: 'vm'
+      template: '<profile-edit></profile-edit>'
     })
+}
+
+function redirectToHomeIfAuth ($q, $state, $firebase) {
+  'ngInject'
+  const defer = $q.defer()
+  $firebase.currentUser()
+    .subscribe(
+      (user) => {
+        if (user) {
+          defer.reject()
+          $state.go('home')
+        } else {
+          defer.resolve()
+        }
+      }
+    )
+  return defer.promise
+}
+
+function redirectToAuthIfNotAuth ($q, $state, $firebase) {
+  'ngInject'
+  const defer = $q.defer()
+  $firebase.currentUser()
+    .subscribe(
+      (user) => {
+        if (!user) {
+          defer.reject()
+          $state.go('auth.signin')
+        } else {
+          defer.resolve()
+        }
+      }
+    )
+  return defer.promise
 }
